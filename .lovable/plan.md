@@ -12,8 +12,9 @@ A student-facing internship matching demo with mock data (no backend needed). In
 
 ## Behaviour and data
 
-- All internship content is realistic mock data held in one shared file so the dashboard cards and the details page stay consistent.
-- Wizard answers, saved internships, and the entered name are kept in memory during the session and reused on the dashboard greeting; nothing is stored permanently.
+- At least 6 varied tech internships as realistic mock data in one shared file, so dashboard cards and every details page (`/internships/1` to `/internships/6`) stay consistent.
+- A shared student profile keeps the wizard answers, saved internships and profile completion (20% at start, rising to 85% after onboarding and resume upload). The dashboard greets the student by name; nothing is stored permanently.
+- Skill tips on the details page, e.g. "Learn Git basics on YouTube".
 - Fully responsive: single column on phones, multi-column grids on desktop.
 
 ## Technical notes
