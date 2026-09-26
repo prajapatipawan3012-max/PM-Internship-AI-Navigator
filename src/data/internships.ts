@@ -24,7 +24,7 @@ const bd = (s: number[]) =>
     ["Interests Match", 15],
     ["Location Match", 10],
     ["Experience Match", 5],
-  ].map(([label, weight], i) => ({ label: label as string, weight: weight as number, score: s[i] }));
+  ].map(([label, weight], i) => ({ label: label as string, weight: weight as number, score: s[i] ?? 0 }));
 
 export const internships: Internship[] = [
   {
