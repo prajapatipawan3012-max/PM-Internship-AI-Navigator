@@ -139,7 +139,7 @@ function Onboarding() {
             )}
           </div>
           <div className="mt-8 flex flex-col-reverse justify-between gap-3 sm:flex-row">
-            <button type="button" className={btnOutline} disabled={step === 0} onClick={() => setStep(step - 1)}>
+            <button type="button" className={btnOutline} onClick={() => (step === 0 ? navigate({ to: "/" }) : setStep(step - 1))}>
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
             {step < 3 ? (
