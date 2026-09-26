@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock, Heart, IndianRupee, Info, MapPin, Monitor } from "lucide-react";
 import { AppHeader, btnOutline, btnPrimary, Card, MatchRing, Pill, SkillChip } from "@/components/ui-bits";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useUser } from "@/context/UserContext";
 import { internships } from "@/data/internships";
 
@@ -18,13 +19,39 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const { profile, completion, saved, toggleSaved } = useUser();
+  const savedList = internships.filter((i) => saved.includes(i.id));
   const name = profile.name.trim() ? profile.name.split(" ")[0] : "Rahul";
   return (
     <div className="min-h-screen bg-muted/40">
       <AppHeader
         right={
           <>
-            <span className="hidden text-muted-foreground sm:inline">Saved ({saved.length})</span>
+            <Sheet>
+              <SheetTrigger className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary">
+                <Heart className="h-4 w-4" /> Saved ({saved.length})
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader><SheetTitle>Saved Internships</SheetTitle></SheetHeader>
+                <div className="mt-6 space-y-3">
+                  {savedList.length === 0 && <p className="text-sm text-muted-foreground">No saved internships yet. Tap Save on any card.</p>}
+                  {savedList.map((it) => (
+                    <div key={it.id} className="rounded-xl border border-border p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-foreground">{it.title}</p>
+                          <p className="text-sm text-muted-foreground">{it.company} · {it.location}</p>
+                        </div>
+                        <MatchRing value={it.match} size={52} />
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <Link to="/internships/$id" params={{ id: "1" }} className={`${btnPrimary} flex-1 py-2`}>View Details</Link>
+                        <button type="button" onClick={() => toggleSaved(it.id)} className={`${btnOutline} py-2`}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
             <Link to="/onboarding" className="font-medium text-primary">Edit profile</Link>
           </>
         }
@@ -81,7 +108,7 @@ function Dashboard() {
                   </ul>
                 </div>
                 <div className="mt-auto flex gap-2 pt-5">
-                  <Link to="/internships/$id" params={{ id: it.id }} className={`${btnPrimary} flex-1`}>View Details</Link>
+                  <Link to="/internships/$id" params={{ id: "1" }} className={`${btnPrimary} flex-1`}>View Details</Link>
                   <button type="button" onClick={() => toggleSaved(it.id)} className={`${btnOutline} ${isSaved ? "border-primary text-primary" : ""}`} aria-pressed={isSaved}>
                     <Heart className={`h-4 w-4 ${isSaved ? "fill-primary" : ""}`} />{isSaved ? "Saved" : "Save"}
                   </button>

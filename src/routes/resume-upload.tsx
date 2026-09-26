@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { FileText, Sparkles, UploadCloud } from "lucide-react";
 import { AppHeader, btnOutline, btnPrimary, Card, SkillChip } from "@/components/ui-bits";
@@ -41,6 +41,11 @@ function ResumeUpload() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
+  const navigate = useNavigate();
+  const proceed = () => {
+    if (done) setCompletion(85);
+    navigate({ to: "/dashboard" });
+  };
   const pick = (f?: File) => f && setFile(f.name);
 
   return (
@@ -73,7 +78,7 @@ function ResumeUpload() {
             <div className="mt-4 flex justify-between text-sm">
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
-                {done ? "Analysis complete" : "Gemini AI is analyzing your profile..."}
+                {done ? "Analysis complete" : `Gemini AI is analyzing your resume... ${Math.min(progress, 85)}%`}
               </span>
               <span className="font-semibold text-primary">{Math.min(progress, 100)}%</span>
             </div>
@@ -100,7 +105,7 @@ function ResumeUpload() {
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Link to="/dashboard" className={btnPrimary}>Proceed to Dashboard</Link>
+          <button type="button" onClick={proceed} className={btnPrimary}>Proceed to Dashboard</button>
           <Link to="/dashboard" className={btnOutline}>Skip for now, use manual profile</Link>
         </div>
       </main>
