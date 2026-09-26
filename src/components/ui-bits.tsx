@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Compass } from "lucide-react";
+import { LogIn, LogOut, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
+import { Show, SignInButton, SignUpButton, SignOutButton, UserButton } from "@clerk/tanstack-react-start";
 
 export function SkillChip({ skill, kind }: { skill: string; kind: "match" | "gap" }) {
   return (
@@ -52,9 +53,7 @@ export function Pill({ children }: { children: ReactNode }) {
 export function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2 font-bold text-foreground">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Compass className="h-5 w-5" />
-      </span>
+      <img src="/logo.png" alt="PM Internship AI Navigator logo" className="h-9 w-9 rounded-lg object-contain" />
       <span className="text-sm sm:text-base">PM Internship AI Navigator</span>
     </Link>
   );
@@ -62,10 +61,48 @@ export function Logo() {
 
 export function AppHeader({ right }: { right?: ReactNode }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Logo />
-        <div className="flex items-center gap-3 text-sm">{right}</div>
+        <div className="flex items-center gap-3 text-sm">
+          {right}
+          <div className="flex items-center gap-2 pl-2 border-l border-border/70">
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition hover:bg-accent cursor-pointer"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 cursor-pointer"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Sign Up
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex items-center gap-3">
+                <UserButton afterSignOutUrl="/" />
+                <SignOutButton>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground cursor-pointer"
+                  >
+                    <LogOut className="h-3 w-3" />
+                    Sign Out
+                  </button>
+                </SignOutButton>
+              </div>
+            </Show>
+          </div>
+        </div>
       </div>
     </header>
   );

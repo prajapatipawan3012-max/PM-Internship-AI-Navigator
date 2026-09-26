@@ -4,6 +4,36 @@ import { AppHeader, btnOutline, btnPrimary, Card, MatchRing, Pill, SkillChip } f
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useUser } from "@/context/UserContext";
 import { internships } from "@/data/internships";
+import { useUser as useClerkUser } from "@clerk/tanstack-react-start";
+import { getSavedInternships, getStudentProfile, toggleSaveInternship } from "@/lib/supabaseDb";
+import { useEffect, useState } from "react";
+
+function rankInternships(profile: ReturnType<typeof useUser>["profile"]) {
+  const interests = profile.interests.map((item) => item.toLowerCase());
+  const skills = profile.skills.map((item) => item.toLowerCase());
+  const profileText = [profile.field, profile.careerGoal, profile.degree, profile.city, profile.workMode, ...interests, ...skills]
+    .join(" ")
+    .toLowerCase();
+
+  return internships
+    .map((internship) => {
+      const jobText = [internship.title, internship.company, internship.sector, internship.location, internship.mode, ...internship.matched, ...internship.gaps.map((gap) => gap.skill)]
+        .join(" ")
+        .toLowerCase();
+      let score = internship.match;
+      score += skills.filter((skill) => jobText.includes(skill)).length * 8;
+      score += interests.filter((interest) => jobText.includes(interest)).length * 12;
+      if (profile.city && internship.location.toLowerCase() === profile.city.toLowerCase()) score += 8;
+      if (profile.workMode && internship.mode.toLowerCase() === profile.workMode.toLowerCase()) score += 5;
+      if (profileText.includes("data science") && /data|analytics|machine learning/.test(jobText)) score += 25;
+      if (profileText.includes("ai/ml") && /artificial intelligence|machine learning|ai/.test(jobText)) score += 25;
+      if (profileText.includes("software development") && /software|frontend|development/.test(jobText)) score += 20;
+      return { internship, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map(({ internship }) => internship);
+}
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -19,8 +49,27 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const { profile, completion, saved, toggleSaved } = useUser();
+  const { user } = useClerkUser();
+  const [profileId, setProfileId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    void getStudentProfile(user.id).then(async (studentProfile) => {
+      if (!studentProfile?.id) return;
+      setProfileId(studentProfile.id);
+      const savedRows = await getSavedInternships(studentProfile.id);
+      if (savedRows) savedRows.forEach((row) => {
+        const internshipId = String(row.internship_id);
+        if (!saved.includes(internshipId)) toggleSaved(internshipId);
+      });
+    }).catch((error) => console.error("Unable to load saved internships", error));
+  }, [user]);
+  const handleToggleSaved = (internshipId: string) => {
+    toggleSaved(internshipId);
+    if (profileId) void toggleSaveInternship(profileId, internshipId).catch((error) => console.error("Unable to save internship", error));
+  };
   const savedList = internships.filter((i) => saved.includes(i.id));
-  const name = profile.name.trim() ? profile.name.split(" ")[0] : "Rahul";
+  const recommendedInternships = rankInternships(profile);
+  const name = profile?.name?.trim() ? profile.name.split(" ")[0] : "Rahul";
   return (
     <div className="min-h-screen bg-muted/40">
       <AppHeader
@@ -45,7 +94,7 @@ function Dashboard() {
                       </div>
                       <div className="mt-3 flex gap-2">
                         <Link to="/internships/$id" params={{ id: "1" }} className={`${btnPrimary} flex-1 py-2`}>View Details</Link>
-                        <button type="button" onClick={() => toggleSaved(it.id)} className={`${btnOutline} py-2`}>Remove</button>
+                        <button type="button" onClick={() => handleToggleSaved(it.id)} className={`${btnOutline} py-2`}>Remove</button>
                       </div>
                     </div>
                   ))}
@@ -80,7 +129,7 @@ function Dashboard() {
 
         <h2 className="text-lg font-bold text-foreground">Recommended Internships</h2>
         <div className="grid gap-5 md:grid-cols-2">
-          {internships.map((it) => {
+          {recommendedInternships.map((it) => {
             const isSaved = saved.includes(it.id);
             return (
               <Card key={it.id} className="flex flex-col">
@@ -109,7 +158,7 @@ function Dashboard() {
                 </div>
                 <div className="mt-auto flex gap-2 pt-5">
                   <Link to="/internships/$id" params={{ id: "1" }} className={`${btnPrimary} flex-1`}>View Details</Link>
-                  <button type="button" onClick={() => toggleSaved(it.id)} className={`${btnOutline} ${isSaved ? "border-primary text-primary" : ""}`} aria-pressed={isSaved}>
+                  <button type="button" onClick={() => handleToggleSaved(it.id)} className={`${btnOutline} ${isSaved ? "border-primary text-primary" : ""}`} aria-pressed={isSaved}>
                     <Heart className={`h-4 w-4 ${isSaved ? "fill-primary" : ""}`} />{isSaved ? "Saved" : "Save"}
                   </button>
                 </div>

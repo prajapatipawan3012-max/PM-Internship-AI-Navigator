@@ -3,6 +3,9 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, Building2, Globe, Home, Plus } from "lucide-react";
 import { AppHeader, btnOutline, btnPrimary, Card, inputCls } from "@/components/ui-bits";
 import { useUser } from "@/context/UserContext";
+import { useUser as useClerkUser } from "@clerk/tanstack-react-start";
+import { saveStudentProfile, saveStudentSkills } from "@/lib/supabaseDb";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -31,10 +34,12 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function Onboarding() {
   const { profile, setProfile, setCompletion } = useUser();
+  const { user } = useClerkUser();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [p, setP] = useState(profile);
   const [custom, setCustom] = useState("");
+  const [saving, setSaving] = useState(false);
   const toggle = (key: "skills" | "interests", v: string) =>
     setP({ ...p, [key]: p[key].includes(v) ? p[key].filter((x) => x !== v) : [...p[key], v] });
   const addCustom = () => {
@@ -42,10 +47,56 @@ function Onboarding() {
     if (v && !p.skills.includes(v)) setP({ ...p, skills: [...p.skills, v] });
     setCustom("");
   };
-  const finish = () => {
-    setProfile(p);
-    setCompletion(60);
-    navigate({ to: "/resume-upload" });
+  const canContinue = step === 0
+    ? Boolean(p.name.trim() && p.degree && p.gradYear && p.field.trim())
+    : step === 2
+      ? Boolean(p.interests.length && p.careerGoal.trim())
+      : step === 3
+        ? Boolean(p.city.trim())
+        : true;
+
+  const continueStep = () => {
+    if (!canContinue) {
+      toast.error("Please complete the required fields before continuing.");
+      return;
+    }
+    setStep(step + 1);
+  };
+
+  const finish = async () => {
+    if (!canContinue || saving) {
+      if (!canContinue) toast.error("Please choose a work mode and enter your city.");
+      return;
+    }
+    if (!user) {
+      toast.error("Please sign in before saving your profile.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const savedProfile = await saveStudentProfile({
+        user_id: user.id,
+        full_name: p.name,
+        degree: p.degree,
+        field_of_study: p.field,
+        graduation_year: p.gradYear,
+        interests: p.interests,
+        career_goal: p.careerGoal,
+        work_mode: p.workMode || "Remote",
+        city: p.city,
+      });
+      if (!savedProfile?.id) throw new Error("Profile was not saved.");
+      await saveStudentSkills(savedProfile.id, p.skills, "onboarding");
+      setProfile(p);
+      setCompletion(60);
+      navigate({ to: "/resume-upload" });
+    } catch (error) {
+      console.error("Unable to save onboarding data", error);
+      toast.error(error instanceof Error ? error.message : "Unable to save your profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
   const allSkills = [...SKILLS, ...p.skills.filter((s) => !SKILLS.includes(s))];
 
@@ -74,7 +125,7 @@ function Onboarding() {
                   <div><Label>Degree</Label>
                     <select className={inputCls} value={p.degree} onChange={(e) => setP({ ...p, degree: e.target.value })}>
                       <option value="">Select degree</option>
-                      {["BCA", "B.Tech", "B.Sc CS", "Diploma", "MCA"].map((d) => <option key={d}>{d}</option>)}
+                      {["BCA", "B.Tech", "BSc", "Diploma", "MCA"].map((d) => <option key={d}>{d}</option>)}
                     </select>
                   </div>
                   <div><Label>Graduation Year</Label>
@@ -143,9 +194,11 @@ function Onboarding() {
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
             {step < 3 ? (
-              <button type="button" className={btnPrimary} onClick={() => setStep(step + 1)}>Continue <ArrowRight className="h-4 w-4" /></button>
+              <button type="button" className={btnPrimary} disabled={!canContinue} onClick={continueStep}>Continue <ArrowRight className="h-4 w-4" /></button>
             ) : (
-              <button type="button" className={btnPrimary} onClick={finish}>Complete Profile & Upload Resume <ArrowRight className="h-4 w-4" /></button>
+              <button type="button" className={btnPrimary} disabled={!canContinue || saving} onClick={finish}>
+                {saving ? "Saving..." : "Complete Profile & Upload Resume"} <ArrowRight className="h-4 w-4" />
+              </button>
             )}
           </div>
         </Card>

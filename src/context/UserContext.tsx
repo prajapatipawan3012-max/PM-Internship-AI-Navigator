@@ -22,10 +22,10 @@ type Ctx = {
 };
 
 const defaultProfile: Profile = {
-  name: "Rahul Sharma",
-  degree: "BCA",
+  name: "",
+  degree: "",
   field: "",
-  gradYear: "2026",
+  gradYear: "",
   skills: [],
   interests: [],
   careerGoal: "",
@@ -39,7 +39,7 @@ const UserContext = createContext<Ctx | null>(null);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
   const [saved, setSaved] = useState<string[]>([]);
-  const [completion, setCompletion] = useState(20);
+  const [completion, setCompletion] = useState(0);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -47,7 +47,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const d = JSON.parse(raw);
-        if (d.profile) setProfile({ ...defaultProfile, ...d.profile });
+        const storedProfile = d.profile && !(d.profile.name === "Rahul Sharma" && d.profile.degree === "BCA" && !d.profile.city)
+          ? d.profile
+          : undefined;
+        if (storedProfile) setProfile({ ...defaultProfile, ...storedProfile });
+        if (!storedProfile) localStorage.removeItem(KEY);
         if (Array.isArray(d.saved)) setSaved(d.saved);
         if (typeof d.completion === "number") setCompletion(d.completion);
       }

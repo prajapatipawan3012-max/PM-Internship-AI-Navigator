@@ -1,3 +1,4 @@
+import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -12,6 +13,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { UserProvider } from "../context/UserContext";
+import { configureSupabaseAccessToken } from "../lib/supabaseClient";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -90,7 +93,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -102,13 +108,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
-        <Scripts />
+      <body suppressHydrationWarning={true}>
+        <ClerkProvider>
+          {children}
+          <Toaster />
+          <Scripts />
+        </ClerkProvider>
       </body>
     </html>
   );
@@ -116,10 +125,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    configureSupabaseAccessToken(() => getToken({ template: "supabase" }));
+    return () => configureSupabaseAccessToken(undefined);
+  }, [getToken]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <UserProvider>
         <Outlet />
       </UserProvider>

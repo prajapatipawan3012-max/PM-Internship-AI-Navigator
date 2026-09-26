@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, FileText, Sparkles, Target, UserPlus } from "lucide-react";
+import { SignInButton, useAuth } from "@clerk/tanstack-react-start";
 import { AppHeader, btnOutline, btnPrimary, Card } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/")({
@@ -15,21 +16,22 @@ export const Route = createFileRoute("/")({
 });
 
 const steps = [
-  { icon: UserPlus, title: "Create Profile", text: "Enter degree and skills" },
-  { icon: FileText, title: "Upload Resume", text: "Let Gemini AI parse your experience" },
-  { icon: Sparkles, title: "Smart Matching", text: "Pinecone vector search & hybrid scoring" },
-  { icon: Target, title: "Bridge Skill Gaps", text: "Clear match scores and skill roadmap" },
+  { icon: UserPlus, title: "Create Profile", text: "Enter your degree, skills, and preferences" },
+  { icon: FileText, title: "Upload Resume", text: "AI automatically parses your experience and achievements" },
+  { icon: Sparkles, title: "Smart Matching", text: "Intelligent skill matching & compatibility scoring" },
+  { icon: Target, title: "Bridge Skill Gaps", text: "Personalized match insights and tailored career roadmaps" },
 ];
 
 function Landing() {
+  const { isSignedIn } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
         right={
           <>
-            <a href="#how" className="hidden text-muted-foreground hover:text-foreground sm:inline">How It Works</a>
-            <Link to="/dashboard" className="hidden text-muted-foreground hover:text-foreground sm:inline">Explore</Link>
-            <Link to="/onboarding" className={btnPrimary}>Sign In</Link>
+            <a href="#how" className="hidden text-muted-foreground hover:text-foreground sm:inline transition-colors">How It Works</a>
+            <Link to="/dashboard" className="hidden text-muted-foreground hover:text-foreground sm:inline transition-colors">Explore</Link>
           </>
         }
       />
@@ -44,7 +46,13 @@ function Landing() {
           Let AI analyze your profile and discover internship opportunities that fit your skills, interests, and career goals.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/onboarding" className={btnPrimary}>Get Started <ArrowRight className="h-4 w-4" /></Link>
+          {isSignedIn ? (
+            <Link to="/onboarding" className={btnPrimary}>Get Started <ArrowRight className="h-4 w-4" /></Link>
+          ) : (
+            <SignInButton mode="modal" fallbackRedirectUrl="/onboarding">
+              <button type="button" className={btnPrimary}>Get Started <ArrowRight className="h-4 w-4" /></button>
+            </SignInButton>
+          )}
           <Link to="/dashboard" className={btnOutline}>Explore Internships</Link>
         </div>
       </section>
@@ -65,8 +73,15 @@ function Landing() {
           ))}
         </div>
       </section>
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        Demo prototype for IGNITE 1% Hackathon. Not an official government portal.
+      <footer className="border-t border-border bg-card/40 py-8 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row">
+          <p>© {new Date().getFullYear()} PM Internship AI Navigator. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="#how" className="hover:text-foreground transition-colors">How It Works</a>
+            <Link to="/dashboard" className="hover:text-foreground transition-colors">Explore Internships</Link>
+            <Link to="/onboarding" className="hover:text-foreground transition-colors">Get Started</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );
